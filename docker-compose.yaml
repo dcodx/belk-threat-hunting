@@ -1,0 +1,58 @@
+version: '3'
+ 
+networks:
+  shell-network:
+    driver: bridge
+ 
+services:
+ 
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.4.0"
+    container_name: elasticsearch
+    networks:
+     - shell-network
+    ports:
+    - "9200:9200"
+    - "9300:9300"
+    environment:
+      discovery.type: single-node
+ 
+ 
+  kibana:
+    build: ./kibana
+    container_name: kibana
+    networks:
+     - shell-network
+    ports:
+     - "5601:5601"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    #volumes:
+    #- ./../kibana/:/usr/share/kibana-plugin/
+    depends_on:
+     - elasticsearch
+
+  elastalert:
+    image: bitsensor/elastalert:rubiev
+    container_name: elastalert
+    environment:
+      ELASTALERT_USER: "elastalert"
+      ELASTALERT_PWD: "changeme"
+      ELASTICSEARCH_HOST: "elasticsearch"
+      ELASTICSEARCH_PORT: "9200"
+    volumes:
+      - ./elastalert/config/elastalert.yaml:/opt/elastalert/config.yaml:ro
+      - ./elastalert/config/config.json:/opt/elastalert-server/config/config.json:ro
+      - ./elastalert/rules/:/opt/elastalert/rules/
+      - ./elastalert/rule_templates/:/opt/elastalert/rule_templates/
+    ports:
+      - 3030:3030
+    networks:
+      - shell-network
+    #create the index elastalert_status
+    command: sh -c 'elastalert-create-index --host=elasticsearch --port=9200 --no-auth --url-prefix="" --no-ssl --index=elastalert_status --old-index=""'
+    depends_on:
+      - elasticsearch
+      - kibana
+    restart: unless-stopped
+

@@ -1,0 +1,14 @@
+alert:
+- "slack"
+slack:
+slack_webhook_url: "https://hooks.slack.com/services/TPD[.........................]xhm4AKdiVSMBBFV5yn"
+description: "Detect Python" 
+filter:
+ - query:
+    wildcard: {process.name: '*Python*'}
+index: auditbeat-*
+name: Test0
+priority: 3
+realert:
+  seconds: 1
+type: any
